@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spacedle: a daily game of everything in space</title>
+<meta name="description" content="Roll once a day and discover one of over a hundred thousand real things in space: asteroids, comets, exoplanets, stars, satellites, rocket bodies and named places on other worlds.">
+<meta property="og:title" content="Spacedle">
+<meta property="og:description" content="Roll once a day and discover one of over a hundred thousand real things in space: asteroids, comets, exoplanets, stars, satellites, rocket bodies and named places on other worlds.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%234338ca'/%3E%3Crect x='28' y='22' width='44' height='56' rx='4' fill='white'/%3E%3Crect x='36' y='34' width='28' height='32' fill='%234338ca'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="space.css">
+<link rel="preload" href="data/pool-v1.json" as="fetch" crossorigin="anonymous">
+<meta name="theme-color" content="#04060f">
+<script>try{var t=localStorage.getItem('spacedle.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+<a class="skip" href="#app">Skip to content</a>
+<header class="top">
+  <a class="brand" href="#/">Spacedle</a>
+  <nav aria-label="Main">
+    <a href="#/">Roll</a>
+    <a href="#/me">My rolls</a>
+    <a href="#/badges">Badges</a>
+    <a href="#/achievements">Achievements</a>
+    <a href="#/find">Find</a>
+    <a href="#/leaderboard" id="lb" hidden>Leaderboard</a>
+    <a href="#/pool">Pool</a>
+    <a href="#/about">About</a>
+    <a href="#/account" id="acct" hidden>Sign in</a>
+  </nav>
+  <button id="theme" type="button"></button>
+</header>
+<main id="app">Loading…</main>
+<div id="live" class="sr" aria-live="polite"></div>
+<footer>
+  Prototype. Data from NASA/JPL, the NASA Exoplanet Archive, J. McDowell's GCAT and the USGS/IAU planetary nomenclature. Unofficial fan project, not affiliated with or endorsed by NASA, JPL, USGS, the IAU or any space agency.
+  <span id="repo"></span>
+</footer>
+<noscript><p style="padding:1rem">Spacedle needs JavaScript to run.</p></noscript>
+<script type="module" src="app.js"></script>
+</body>
+</html>

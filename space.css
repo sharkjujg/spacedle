@@ -1,0 +1,39 @@
+/* Spacedle: a night-sky skin over the shared style.css. Colors, backdrop and a few accents only; the layout is the shared one.
+   "Auto" and "Dark" are both the night sky (this game has no daytime look to follow); "Light" is a pale star-chart. */
+:root:not([data-theme="light"]) { color-scheme: dark;
+  --bg: #04060f; --fg: #eaf0ff; --muted: #9eabc9; --card: rgb(11 16 33 / .82); --line: #1c2646; --soft: rgb(20 29 58 / .75);
+  --accent: #8ea2ff; --accent-fg: #060a18; --pts: #ffd36e; --ptsbg: #2b2410; --star: #fff; --glow: 142 162 255;
+  --t-mythic: #ff7ad9; --t-anomaly: #ff8a6b; --t-epic: #b79bff; --t-rare: #6fb0ff; --t-uncommon: #4ade9a; --t-common: #9eabc9; --t-low: #8d93a0; }
+:root[data-theme="light"] { --bg: #f3f5ff; --soft: #e9edfb; --line: #d9def3; --star: #5b66c8; --glow: 67 56 202; }
+
+body { position: relative; background: var(--bg); }
+body::before, body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: -1; }
+body::before { /* nebula */
+  background: radial-gradient(62rem 38rem at 12% -8%, rgb(var(--glow) / .20), transparent 62%), radial-gradient(48rem 34rem at 96% 8%, rgb(168 85 247 / .14), transparent 62%), radial-gradient(52rem 30rem at 58% 112%, rgb(14 165 233 / .13), transparent 62%); }
+body::after { /* two tiles of stars drifting out of step */
+  opacity: .9; animation: twinkle 7s ease-in-out infinite alternate;
+  background-image:
+    radial-gradient(1.2px 1.2px at 40px 70px, var(--star), transparent), radial-gradient(1px 1px at 130px 20px, var(--star), transparent), radial-gradient(1.4px 1.4px at 220px 150px, var(--star), transparent),
+    radial-gradient(1px 1px at 310px 90px, var(--star), transparent), radial-gradient(1.2px 1.2px at 90px 230px, var(--star), transparent), radial-gradient(1px 1px at 270px 260px, var(--star), transparent),
+    radial-gradient(1px 1px at 380px 200px, var(--star), transparent), radial-gradient(1.4px 1.4px at 170px 330px, var(--star), transparent), radial-gradient(1px 1px at 20px 360px, var(--star), transparent),
+    radial-gradient(1px 1px at 120px 120px, var(--star), transparent), radial-gradient(1.6px 1.6px at 350px 340px, var(--star), transparent),
+    radial-gradient(1px 1px at 60px 40px, var(--star), transparent), radial-gradient(1.3px 1.3px at 210px 60px, var(--star), transparent), radial-gradient(1px 1px at 330px 160px, var(--star), transparent), radial-gradient(1px 1px at 140px 280px, var(--star), transparent);
+  background-size: 400px 400px, 400px 400px, 400px 400px, 400px 400px, 400px 400px, 400px 400px, 400px 400px, 400px 400px, 400px 400px, 400px 400px, 400px 400px, 290px 290px, 290px 290px, 290px 290px, 290px 290px; }
+:root[data-theme="light"] body::after { opacity: .35; }
+@keyframes twinkle { from { opacity: .55; } to { opacity: 1; } }
+@keyframes orbit { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { body::after { animation: none; } .loading::before, .loading::after { animation: none; } }
+
+.brand::before { content: '✦'; margin-right: .5rem; color: var(--accent); }
+.card, .stats div, .bcard, .notice { backdrop-filter: blur(6px); }
+.avatar { box-shadow: 0 0 0 1px var(--line), 0 10px 44px rgb(var(--glow) / .28); }
+.result .avatar { width: 9.5rem; }
+.hero { backdrop-filter: blur(6px); }
+
+/* loading: a small planet with a moon, and the download counter */
+.loading { padding: 5rem 1rem; }
+.loading::before { content: ''; display: block; width: 3.4rem; height: 3.4rem; margin: 0 auto 1.6rem; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #cdd6ff, var(--accent) 45%, #1a2150); box-shadow: 0 0 40px rgb(var(--glow) / .55); }
+.loading::after { content: ''; position: absolute; left: 50%; top: 5rem; width: 7.4rem; height: 7.4rem; margin: -2rem 0 0 -3.7rem; border-radius: 50%; border: 1px dashed var(--line); background: radial-gradient(circle at 50% 0, var(--fg) 0 .22rem, transparent .28rem); animation: orbit 3.4s linear infinite; }
+.loading { position: relative; }
+.loading progress { max-width: 16rem; display: block; margin: 0 auto 1rem; }
+.loading p { color: var(--muted); font-size: .9rem; margin: 0; }
