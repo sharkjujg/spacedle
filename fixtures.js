@@ -30,5 +30,9 @@ export function poolChecks(raw, pool, ok) {
   ok('feature coordinates and sizes are sane', by.feature.every((m) => (m.lat == null || (m.lat >= -90 && m.lat <= 90)) && (m.diameter == null || m.diameter >= 0)));
   ok('every named place has a world and a type', by.feature.every((m) => m.body && m.ftype));
   ok('USGS feature ids look like numbers', by.feature.every((m) => m.fid == null || Number.isInteger(m.fid)));
+  ok('deep-sky objects ascend by NGC number, each number once, in the real range 1 to 7840', by.deepsky.every((m, i) => m.ngc >= 1 && m.ngc <= 7840 && (i === 0 || m.ngc > by.deepsky[i - 1].ngc)) && by.deepsky.every((m) => m.id === `NGC ${m.ngc}`));
+  ok('deep-sky Messier numbers are 1 to 110 and not repeated', (() => { const ms = by.deepsky.map((m) => m.messier).filter((x) => x != null); return ms.every((x) => x >= 1 && x <= 110) && new Set(ms).size === ms.length; })());
+  ok('deep-sky distances, magnitudes and years are plausible', by.deepsky.every((m) => (m.dist == null || (m.dist > 0 && m.dist < 1e10)) && (m.mag == null || (m.mag > -30 && m.mag < 30)) && (m.year == null || (m.year > 100 && m.year < 2100))));
+  ok('deep-sky objects name only real constellations (88 in all)', new Set(by.deepsky.map((m) => m.con).filter(Boolean)).size === 88);
   ok('the pool is large enough to be a game (>= 100,000)', pool.n >= 100000);
 }

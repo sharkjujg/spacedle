@@ -96,7 +96,7 @@ k.when('Potentially Hazardous', 'Asteroid Earth watch', 'Flagged as a potentiall
 // dynamical class: an asteroid has exactly one
 for (const [code, nm] of [['MBA', 'Main-Belt Asteroid'], ['IMB', 'Inner Main-Belt'], ['OMB', 'Outer Main-Belt'], ['MCA', 'Mars-Crosser'], ['APO', 'Apollo'], ['AMO', 'Amor'], ['ATE', 'Aten'], ['IEO', 'Atira'],
   ['TJN', 'Jupiter Trojan'], ['CEN', 'Centaur'], ['TNO', 'Trans-Neptunian'], ['HYA', 'Unbound Orbit'], ['AST', 'Unclassified Rock']]) {
-  k.is(nm, 'Asteroid class', 'cls', code, `Dynamical class ${code}: ${CLASS[code]}`, (m) => `${m.lab} is classed ${code} (${CLASS[code]})`, 'class');
+  k.is(nm, 'Asteroid class', 'cls', code, code === 'HYA' ? 'Dynamical class HYA: an unbound, hyperbolic orbit (the one asteroid so classed is the interstellar visitor 1I/ʻOumuamua)' : `Dynamical class ${code}: ${CLASS[code]}`, (m) => `${m.lab} is classed ${code} (${CLASS[code]})`, 'class');
 }
 // taxonomy (from spectra; only a couple of thousand asteroids have one)
 for (const [c, nm] of [['S', 'Stony Type'], ['C', 'Carbon Type'], ['X', 'Metal-Mix Type'], ['V', 'Vestoid'], ['D', 'Primitive Type'], ['L', 'Leftover Type'], ['K', 'Kilo Type'], ['A', 'Olivine Type'], ['T', 'Troilite Type'], ['Q', 'Fresh-Surface Type'], ['O', 'Oxford Type'], ['R', 'Rosy Type']]) {

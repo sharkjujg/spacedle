@@ -28,6 +28,24 @@ kept = {r['id'] for r in keep}
 eq(big[0]['id'] in kept and big[-1]['id'] in kept, True)
 # trailing nulls are trimmed so a sparse row stays short
 eq(b.trim([1, 'a', None, 3, None, None]), [1, 'a', None, 3]); eq(b.trim([None, None]), [])
+# deep-sky: the most informative Wikidata type wins, distances convert to light-years, a shared NGC number keeps the better described item
+eq(b.pick_type(['spiral galaxy', 'infrared source', 'galaxy']), 'spiral galaxy'); eq(b.pick_type(['open cluster', 'star cluster']), 'open cluster')
+eq(b.pick_type(['HI (21cm) source', 'astronomical radio source']), 'HI (21cm) source'); eq(b.pick_type([]), None); eq(b.pick_type(['galaxy', 'astronomical object']), 'galaxy')
+import json, tempfile  # noqa: E402
+with tempfile.TemporaryDirectory() as tmp:
+    fake = {'0': [
+        {'x': 'http://www.wikidata.org/entity/Q2469', 'id': '224', 'xLabel': 'Andromeda Galaxy', 'typeLabel': 'spiral galaxy', 'm': '3.44', 'conLabel': 'Andromeda', 'amt': '0.78', 'unit': 'http://www.wikidata.org/entity/Q3773454', 'discLabel': 'Al-Sufi', 'date': '0964-01-01T00:00:00Z', 'z': '-0.001', 'alias': 'M31'},
+        {'x': 'http://www.wikidata.org/entity/Q2', 'id': '224', 'xLabel': 'Q2'},
+        {'x': 'http://www.wikidata.org/entity/Q3', 'id': '7000', 'xLabel': 'Q3', 'typeLabel': 'emission nebula', 'amt': '2600', 'unit': 'http://www.wikidata.org/entity/Q531'},
+        {'x': 'http://www.wikidata.org/entity/Q3', 'id': '7000', 'xLabel': 'Q3', 'typeLabel': 'emission nebula', 'amt': '1000', 'unit': 'http://www.wikidata.org/entity/Q12129'},
+        {'x': 'http://www.wikidata.org/entity/Q4', 'id': '1952', 'xLabel': 'Messier 1', 'typeLabel': 'supernova remnant'}]}
+    pathlib.Path(tmp, 'deepsky.json').write_text(json.dumps(fake), encoding='utf-8')
+    rows = b.deepsky(tmp)
+eq([r[0] for r in rows], ['NGC 224', 'NGC 1952', 'NGC 7000'])  # sorted by NGC number; the bare duplicate of 224 is dropped
+eq(rows[0], ['NGC 224', 'Andromeda Galaxy', 224, 31, 'spiral galaxy', 3.44, 'Andromeda', 2540000, 'Al-Sufi', 964, -0.001, 2469])
+eq((rows[1][1], rows[1][3]), (None, 1))  # a Messier label gives the Messier number, and is not a name
+eq([bool(b.CATALOG_NAME.match(x)) for x in ('NGC 526A', 'IC 2118', 'Mrk 590', '50 Cassiopeiae', 'Q123', 'Crab Nebula', '47 Tucanae', 'Andromeda Galaxy', 'Messier 1')], [True, True, True, True, True, False, True, False, True])  # 47 Tucanae is a star designation too; kept out of 'named'
+eq(rows[2][1], None); eq(rows[2][7], 3260)  # median of 2,600 ly and 1,000 pc (3,262 ly), to 3 significant digits
 # the schema: ids first, codes unique, every kind ordered
 eq(len({c for c, _ in b.SCHEMA.values()}), len(b.SCHEMA)); eq(all(f[0] == 'id' for _, f in b.SCHEMA.values()), True); eq(sorted(b.ORDER), sorted(b.SCHEMA))
 print('all import checks passed')

@@ -8,9 +8,10 @@
   satellite  J. McDowell's GCAT: every cataloged payload (near-identical swarms capped, see cap_series)
   rocket     GCAT: cataloged rocket bodies, same cap
   feature    USGS Gazetteer of Planetary Nomenclature: every IAU-approved named feature on 50 solar-system bodies
+  deepsky    Wikidata (CC0): every item with a New General Catalogue (NGC) number: galaxies, clusters, nebulae and more
 
 Rows are arrays (the kind's schema is in meta.kinds) so 130,000 records stay a few megabytes. A value a catalog lacks is
-null and never satisfies a badge. Usage: python -I tools/build_pool.py <raw dir> <cometrng pool-v1.json>
+null and never satisfies a badge. Usage: python -I tools/build_pool.py <raw dir> <cometrng pool-v1.json>   (deepsky.json comes from tools/fetch_deepsky.py)
 """
 import collections
 import datetime as dt
@@ -35,8 +36,9 @@ SCHEMA = {  # kind -> (code, fields). Order is the row layout; trailing nulls ar
     'satellite': ('t', ['id', 'name', 'piece', 'launch', 'decay', 'status', 'state', 'owner', 'maker', 'bus', 'mass', 'dmass', 'length', 'diam', 'span', 'shape', 'perigee', 'apogee', 'inc', 'orbit']),
     'rocket': ('r', ['id', 'name', 'piece', 'launch', 'decay', 'status', 'state', 'owner', 'maker', 'mass', 'length', 'diam', 'perigee', 'apogee', 'inc', 'orbit']),
     'feature': ('f', ['id', 'body', 'name', 'ftype', 'diameter', 'lat', 'year', 'eth', 'cont', 'origin', 'fid']),
+    'deepsky': ('d', ['id', 'name', 'ngc', 'messier', 'type', 'mag', 'con', 'dist', 'disc', 'year', 'z', 'q']),
 }
-ORDER = ['asteroid', 'comet', 'exoplanet', 'star', 'satellite', 'rocket', 'feature']
+ORDER = ['asteroid', 'comet', 'exoplanet', 'star', 'satellite', 'rocket', 'feature', 'deepsky']  # a new kind goes last so earlier records keep their index
 
 
 def sig(x, n=4):
@@ -229,6 +231,44 @@ def features(raw):
     return out
 
 
+LY = {'Q3773454': 3.2616e6, 'Q12129': 3.2616, 'Q11929860': 3261.6, 'Q531': 1.0}  # Wikidata units for a distance: megaparsec, parsec, kiloparsec, light-year
+GENERIC = re.compile(r'source|nucleus|medium|unknown|astronomical object|region$|emission-line|HI \(21cm\)', re.I)  # types that say what an instrument saw, not what the object is
+
+CATALOG_NAME = re.compile(r'^(Q\d+$|NGC ?\d|IC ?\d|Messier \d|Mrk |UGC |PGC |ESO |MCG |CGCG |Arp |Abell |Cl |Collinder |Melotte |Stock |Trumpler |Berkeley |\d+ [A-Z][a-z]+$)')
+
+
+def pick_type(types):
+    """The most informative of an item's Wikidata types: a morphology or a kind of cluster or nebula beats a bare 'source'."""
+    ranked = sorted(set(types), key=lambda t: (1 if GENERIC.search(t) else 0, 1 if t in ('galaxy', 'star') else 0, t))
+    return ranked[0] if ranked else None
+
+
+def deepsky(raw):
+    items = collections.defaultdict(list)
+    for chunk in json.load(open(f'{raw}/deepsky.json', encoding='utf-8')).values():
+        for r in chunk:
+            items[r['x']].append(r)
+    best = {}
+    for rows in items.values():
+        ids = sorted({int(re.sub(r'\D', '', r['id'])) for r in rows if re.sub(r'\D', '', r['id'])})
+        if not ids:
+            continue
+        label = rows[0].get('xLabel', '')
+        name = None if CATALOG_NAME.match(label) else label  # a catalog number is not a name
+        dists = sorted(float(r['amt']) * LY[r['unit'].rsplit('/', 1)[-1]] for r in rows if r.get('amt') and r.get('unit', '').rsplit('/', 1)[-1] in LY)
+        years = [int(r['date'][:4]) for r in rows if r.get('date', '')[:4].isdigit()]
+        messier = next((int(re.sub(r'\D', '', r['alias'])) for r in rows if r.get('alias')), None)
+        if messier is None and (m := re.fullmatch(r'Messier (\d+)', label)):
+            messier = int(m.group(1))
+        row = [f'NGC {ids[0]}', name, ids[0], messier, pick_type([r['typeLabel'] for r in rows if r.get('typeLabel')]), sig(next((r['m'] for r in rows if r.get('m')), None), 3),
+               next((r['conLabel'] for r in rows if r.get('conLabel')), None), sig(dists[len(dists) // 2], 3) if dists else None, next((r['discLabel'] for r in rows if r.get('discLabel')), None),
+               min(years) if years else None, sig(next((r['z'] for r in rows if r.get('z')), None), 4), int(rows[0]['x'].rsplit('/Q', 1)[-1])]
+        known = sum(v is not None for v in row)
+        if row[0] not in best or known > best[row[0]][1]:  # two Wikidata items can claim one NGC number: keep the better described
+            best[row[0]] = (row, known)
+    return sorted((v[0] for v in best.values()), key=lambda r: r[2])
+
+
 def trim(row):
     while row and row[-1] is None:
         row.pop()
@@ -240,6 +280,7 @@ def main(raw, comet_pool):
     parts['exoplanet'], parts['star'] = exo(raw)
     (parts['satellite'], sd), (parts['rocket'], rd) = gcat(raw)
     parts['feature'] = features(raw)
+    parts['deepsky'] = deepsky(raw)
     members, counts = [], {}
     for kind in ORDER:
         code, fields = SCHEMA[kind]
@@ -258,12 +299,12 @@ def main(raw, comet_pool):
             cov[f'{kind}.{f}'] = 'known' if known == len(rows) else f'known for {known:,} of {len(rows):,}; unknown never satisfies a badge'
     meta = {
         'version': 'v1', 'publishedAt': today, 'capturedAt': today,
-        'source': 'NASA/JPL Small-Body Database, NASA Exoplanet Archive, GCAT (J. McDowell), USGS Gazetteer of Planetary Nomenclature',
+        'source': 'NASA/JPL Small-Body Database, NASA Exoplanet Archive, GCAT (J. McDowell), USGS Gazetteer of Planetary Nomenclature, Wikidata',
         'provenance': f'Snapshot taken {today} by tools/fetch_raw.py and tools/build_pool.py. Asteroid and comet data courtesy of NASA/JPL-Caltech; exoplanet and host-star data from the NASA Exoplanet Archive; '
-                      'satellite and rocket data from GCAT: McDowell, Jonathan C., 2020, General Catalog of Artificial Space Objects, Release 1.8.8, planet4589.org/space/gcat (CC BY 4.0); feature names from the USGS/IAU Gazetteer of Planetary Nomenclature.',
+                      'satellite and rocket data from GCAT: McDowell, Jonathan C., 2020, General Catalog of Artificial Space Objects, Release 1.8.8, planet4589.org/space/gcat (CC BY 4.0); feature names from the USGS/IAU Gazetteer of Planetary Nomenclature; deep-sky objects from Wikidata (CC0).',
         'selection': f'{counts["asteroid"]:,} asteroids (every named one, every near-Earth asteroid, trans-Neptunian object and Centaur); {counts["comet"]:,} comets; {counts["exoplanet"]:,} confirmed exoplanets and the '
                      f'{counts["star"]:,} stars that host them; {counts["satellite"]:,} cataloged payloads and {counts["rocket"]:,} rocket bodies (series of near-identical spacecraft thinned to {CAP}: '
-                     f'{sum(sd.values()):,} payloads and {sum(rd.values()):,} rocket bodies left out); {counts["feature"]:,} IAU-approved named features on 50 bodies.',
+                     f'{sum(sd.values()):,} payloads and {sum(rd.values()):,} rocket bodies left out); {counts["feature"]:,} IAU-approved named features on 50 bodies; {counts["deepsky"]:,} deep-sky objects with an NGC number.',
         'counts': counts,
         'kinds': {code: {'kind': kind, 'fields': fields} for kind, (code, fields) in SCHEMA.items()},
         'fieldStatus': cov,
